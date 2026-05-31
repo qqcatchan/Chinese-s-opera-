@@ -1,0 +1,6 @@
+1. 系統架構索引 (Architecture Index)
+為了讓 GitHub 上的專案運作順暢，你的專案結構應如下：
+ ⁠/Scripts/OperaManager.cs⁠ (主控台)
+ ⁠/Scripts/OperaData.cs⁠ (資源索引)
+ ⁠/Audio/⁠ (存放你的曲目)
+ ⁠/Images/⁠ (存放你的 5 張素材圖)
