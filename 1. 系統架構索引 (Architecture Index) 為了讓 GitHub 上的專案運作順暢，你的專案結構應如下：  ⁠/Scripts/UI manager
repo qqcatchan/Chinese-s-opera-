@@ -1,0 +1,1 @@
+OperaManager.cs⁠. Create a separate ⁠UIManager.cs⁠ that calls the ⁠PlaySelectedOpera⁠ method in your ⁠OperaManager⁠.
