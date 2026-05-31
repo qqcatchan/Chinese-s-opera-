@@ -1,0 +1,7 @@
+{
+  "name": "ai-music",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'Define your build script here'"
+  }
+}

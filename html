@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>京劇舞蹈 3D 舞台</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. 場景設定
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. 建立京劇圓盤 (貼上你的圖)
+        const geometry = new THREE.CircleGeometry(2, 64);
+        // 將這裡的 URL 換成你實際圖片的網址
+        const texture = new THREE.TextureLoader().load('https://i.imgur.com/你的圖片ID.png'); 
+        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+        const disc = new THREE.Mesh(geometry, material);
+        scene.add(disc);
+
+        camera.position.z = 5;
+
+        // 3. 動畫迴圈 (讓它轉動)
+        function animate() {
+            requestAnimationFrame(animate);
+            disc.rotation.y += 0.01; // 旋轉速度
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>

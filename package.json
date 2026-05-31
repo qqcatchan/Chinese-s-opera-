@@ -1,0 +1,9 @@
+{
+  "name": "ai-music",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "echo 'No build script specified'"
+  },
+  "dependencies": {}
+}
