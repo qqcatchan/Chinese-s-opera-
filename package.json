@@ -1,9 +1,31 @@
 {
-  "name": "ai-music",
+  "name": "chinese-opera-actor-poses",
   "version": "1.0.0",
-  "description": "",
+  "description": "Actors avatar motion poses for Chinese opera - A project showcasing avatar animations and motion capture for traditional Chinese opera characters",
+  "main": "operate data.cs",
+  "keywords": [
+    "chinese-opera",
+    "avatar",
+    "motion-capture",
+    "animation",
+    "poses",
+    "actor"
+  ],
+  "author": "qqcatchan",
+  "license": "MIT",
   "scripts": {
-    "build": "echo 'No build script specified'"
+    "build": "echo 'Build script to be implemented'",
+    "start": "echo 'Start script to be implemented'",
+    "test": "echo 'Test script to be implemented'"
   },
-  "dependencies": {}
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qqcatchan/Chinese-s-opera-.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qqcatchan/Chinese-s-opera-/issues"
+  },
+  "homepage": "https://github.com/qqcatchan/Chinese-s-opera-#readme",
+  "dependencies": {},
+  "devDependencies": {}
 }
