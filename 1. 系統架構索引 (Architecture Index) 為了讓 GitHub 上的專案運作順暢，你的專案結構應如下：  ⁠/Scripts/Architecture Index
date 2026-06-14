@@ -1,0 +1,14 @@
+Ai-instructor-training-VR/
+├── index.html (主要登陸頁面)
+├── src/
+│   ├── app.js (主應用程式)
+│   ├── vr-trainer.js (VR 訓練)
+│   ├── music-engine.js (音樂引擎)
+│   ├── chinese-opera.js (京劇 3D 視覺)
+│   ├── gesture-detector.js (姿勢偵測)
+│   └── speech-recognition.js (語音識別)
+├── assets/
+│   ├── images/ (從 Chinese-s-opera 嘅圖片)
+│   └── audio/ (音樂檔)
+└── styles/
+    └── main.css
