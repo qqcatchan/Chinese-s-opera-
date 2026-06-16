@@ -1,0 +1,25 @@
+Assets/
+ ├── Scripts/
+ │    ├── PlatformSelector.cs
+ │    ├── OperaTrainingManager.cs
+ │    ├── TrainingEvaluator.cs
+ │    ├── ReportGenerator.cs
+ │    ├── SceneController.cs
+ │
+ ├── Scenes/
+ │    ├── MainMenu.unity
+ │    ├── VRScene.unity
+ │    ├── ProjectorScene.unity
+ │    ├── MobileScene.unity
+ │    ├── WebScene.unity
+ │    ├── Stage1.unity
+ │    ├── Stage2.unity
+ │    ├── UpgradeScene.unity
+ │
+ ├── Resources/
+ │    ├── Animations/
+ │    ├── Audio/
+ │    ├── Prefabs/
+ │
+ ├── Reports/
+ │    ├── TrainingReport.json
