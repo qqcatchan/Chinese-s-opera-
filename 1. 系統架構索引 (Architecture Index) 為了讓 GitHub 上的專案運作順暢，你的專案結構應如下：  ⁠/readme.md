@@ -24,4 +24,4 @@ AI Immersive Trainer 系統係一個 **沉浸式 AI 導師平台**，支援：
 ## 🔧 安裝與使用
 1. Clone 專案：
    ```bash
-   git clone https://github.com/你的帳號/vr-opera-training.git
+   git clone https://github.com/qqcatchan@gmail.com/vr-opera-training.git
