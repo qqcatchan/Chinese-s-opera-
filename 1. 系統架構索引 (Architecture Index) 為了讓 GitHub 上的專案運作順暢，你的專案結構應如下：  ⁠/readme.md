@@ -1,7 +1,7 @@
-# AI Immersive Trainer 系統
+# AI Immersive instructor training AR VR 系統
 
 ## 🎭 系統簡介
-AI Immersive Trainer 系統係一個 **沉浸式 AI 導師平台**，支援：
+AI Immersive instructor training AR VR 系統係一個 **沉浸式 AI 導師平台**，支援：
 - 粵劇唱腔、舞步、武打
 - 語言學習（粵語、普通話、英文）
 - 運動訓練（舞蹈、健身、武打）
