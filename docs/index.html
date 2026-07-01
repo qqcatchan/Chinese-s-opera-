@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chinese Opera Mobile Demo (Pages)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:12px}
+    .video-wrap{position:relative;width:320px;height:240px}
+    video{border:1px solid #ccc}
+    canvas.overlay{position:absolute;left:0;top:0;pointer-events:none}
+    .meter-bg{height:12px;background:#eee;width:320px;border-radius:6px;margin-top:8px}
+    .meter{height:12px;background:#4caf50;width:0%;border-radius:6px}
+    .advice{margin-top:8px;background:#111;color:#fff;padding:8px;border-radius:6px;max-width:320px}
+    .note{max-width:720px;margin-top:12px;font-size:14px;color:#333}
+  </style>
+  <!-- MediaPipe CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/pose.js"></script>
+</head>
+<body>
+  <h2>Chinese Opera Mobile Demo — Pages (單機、iPhone 可用)</h2>
+  <p>說明：這是單機靜態版 demo，使用 MediaPipe 在瀏覽器做姿態偵測與簡單音量條。若要完整多人功能需後端 signaling。</p>
+
+  <div class="video-wrap">
+    <video id="cam" playsinline autoplay muted width="320" height="240"></video>
+    <canvas id="overlay" class="overlay" width="320" height="240"></canvas>
+  </div>
+
+  <div class="meter-bg"><div id="volume-meter" class="meter"></div></div>
+  <div id="advice" class="advice">Advice: ---</div>
+  <div class="note">測試建議：在 iPhone Safari 開啟此頁面，允許相機與麥克風。若未顯示相機，請確認為 HTTPS（GitHub Pages 為 HTTPS）。</div>
+
+<script>
+(async function(){
+  const video = document.getElementById('cam')
+  const canvas = document.getElementById('overlay')
+  const ctx = canvas.getContext('2d')
+  const adviceEl = document.getElementById('advice')
+
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 }, audio: true })
+    video.srcObject = stream
+    setupAudioMeter(stream)
+  }catch(e){
+    alert('無法取得相機或麥克風，請確認權限與 HTTPS。錯誤: '+e.message)
+    console.error(e)
+    return
+  }
+
+  if (!window.Pose) {
+    adviceEl.textContent = 'MediaPipe 未載入' 
+    return
+  }
+
+  const pose = new window.Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5/${file}` })
+  pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, enableSegmentation: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 })
+  pose.onResults(onResults)
+
+  async function loop(){
+    if (video.readyState >= 2) {
+      try{ await pose.send({image: video}) }catch(e){/*ignore*/}
+    }
+    requestAnimationFrame(loop)
+  }
+  loop()
+
+  function onResults(results){
+    if (!results) return
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    ctx.drawImage(results.image,0,0,canvas.width,canvas.height)
+    if (results.poseLandmarks){
+      drawLandmarks(ctx, results.poseLandmarks)
+      const adv = analyzePose(results.poseLandmarks)
+      adviceEl.textContent = 'Advice: ' + (Array.isArray(adv)?adv.join(' | '):adv)
+    }
+  }
+
+  function drawLandmarks(ctx, landmarks){
+    ctx.fillStyle='rgba(255,0,0,0.9)'
+    for(let i=0;i<landmarks.length;i++){
+      const x=landmarks[i].x*canvas.width
+      const y=landmarks[i].y*canvas.height
+      ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill()
+    }
+    ctx.strokeStyle='rgba(0,255,0,0.8)';ctx.lineWidth=2
+    const line=(a,b)=>{ctx.beginPath();ctx.moveTo(landmarks[a].x*canvas.width,landmarks[a].y*canvas.height);ctx.lineTo(landmarks[b].x*canvas.width,landmarks[b].y*canvas.height);ctx.stroke()}
+    line(11,12);line(11,23);line(12,24)
+  }
+
+  function analyzePose(landmarks){
+    const advice=[]
+    const leftShoulder = landmarks[11]; const rightShoulder = landmarks[12];
+    const leftHip = landmarks[23]; const rightHip = landmarks[24];
+    const shoulderMid = {x:(leftShoulder.x+rightShoulder.x)/2, y:(leftShoulder.y+rightShoulder.y)/2}
+    const hipMid = {x:(leftHip.x+rightHip.x)/2, y:(leftHip.y+rightHip.y)/2}
+    const dx = shoulderMid.x - hipMid.x; const dy = shoulderMid.y - hipMid.y
+    const angle = Math.atan2(dy,dx)*(180/Math.PI); const tilt = Math.abs(angle)
+    if (tilt>10) advice.push('Torso tilted — stand upright')
+    const nose = landmarks[0]; const headDy = nose.y - shoulderMid.y
+    if (Math.abs(headDy)>0.12) advice.push('Head off — align head')
+    // simple elbow check
+    function angleBetween(a,b,c){const ab={x:a.x-b.x,y:a.y-b.y};const cb={x:c.x-b.x,y:c.y-b.y};const dot=ab.x*cb.x+ab.y*cb.y;const mag=Math.sqrt((ab.x*ab.x+ab.y*ab.y)*(cb.x*cb.x+cb.y*cb.y));if(mag===0)return 0;const cos=Math.max(-1,Math.min(1,dot/mag));return Math.acos(cos)*(180/Math.PI)}
+    const leftElbow=landmarks[13]; const leftWrist=landmarks[15]; const leftArmAngle = angleBetween(leftShoulder,leftElbow,leftWrist)
+    if (leftArmAngle<30) advice.push('Left arm — bend elbow a bit')
+    const rightElbow=landmarks[14]; const rightWrist=landmarks[16]; const rightArmAngle=angleBetween(rightShoulder,rightElbow,rightWrist)
+    if (rightArmAngle<30) advice.push('Right arm — bend elbow a bit')
+    if (advice.length===0) return 'Good posture — keep it up!'
+    return advice
+  }
+
+  function setupAudioMeter(stream){
+    try{
+      const audioCtx = new (window.AudioContext||window.webkitAudioContext)()
+      const src = audioCtx.createMediaStreamSource(stream)
+      const analyser = audioCtx.createAnalyser(); analyser.fftSize=1024
+      src.connect(analyser); const data=new Uint8Array(analyser.frequencyBinCount)
+      const meter = document.getElementById('volume-meter')
+      function tick(){analyser.getByteFrequencyData(data);const sum=data.reduce((s,v)=>s+v,0);const avg=sum/data.length; if(meter) meter.style.width = Math.min(100, Math.round(avg/2)) + '%'; requestAnimationFrame(tick)}
+      tick()
+    }catch(e){console.warn('audio meter error',e)}
+  }
+
+})();
+</script>
+</body>
+</html>
