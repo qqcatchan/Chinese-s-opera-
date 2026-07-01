@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend/mobile-demo
+    image: chinese-opera-frontend:latest
+    working_dir: /app
+    volumes:
+      - ./frontend/mobile-demo:/app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - signaling
+
+  signaling:
+    build: ./backend/signaling
+    image: chinese-opera-signaling:latest
+    working_dir: /app
+    volumes:
+      - ./backend/signaling:/app
+    ports:
+      - "4000:4000"
+    depends_on:
+      - coturn
+
+  coturn:
+    image: instrumentisto/coturn:4
+    container_name: coturn
+    restart: unless-stopped
+    environment:
+      - LISTENING_PORT=3478
+      - REALM=${DOMAIN:-example.com}
+      - MIN_PORT=49152
+      - MAX_PORT=65535
+      - LONG_TERM_CREDENTIALS=1
+      - STATIC_AUTH_SECRET=${TURN_SECRET:-replace_with_long_random}
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "49152-65535:49152-65535/udp"
+    volumes:
+      - ./infra/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - signaling
+
+volumes:
+  caddy_data:
+  caddy_config:

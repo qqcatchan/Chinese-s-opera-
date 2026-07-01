@@ -1,89 +1,26 @@
-
-.github/workflows/deploy.yml
-
-name: Deploy to GitHub Pages
+name: Deploy to VPS
 
 on:
-  
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
         with:
-          node-version: 20
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Install dependencies
-        run: npm install
+      - name: Archive files
+        run: tar czf deploy_package.tgz .
 
-      - name: Build project
-        run: npm run build
+      - name: Copy to server
+        run: |
+          scp -o StrictHostKeyChecking=no deploy_package.tgz ${{ secrets.DEPLOY_TARGET }}:/tmp/
 
-      - name: Run peaceiris/actions-gh-pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build  # 如果你係用 Vite，請將 ./build 改做 ./dist
-          publish_branch: gh-pages
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    env:
-      PROJECT_DIR: '.'
-      PUBLISH_DIR: './build'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Show workspace & Build website
-      run: |
-        set -e
-        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-        pwd
-        ls -la
-
-        echo "Using PROJECT_DIR=$PROJECT_DIR"
-        cd "$PROJECT_DIR"
-        echo "Now in: $(pwd)"
-        ls -la
-
-        if [ ! -f package.json ]; then
-          echo "::error::package.json not found in $(pwd)"
-          echo "Files in $(pwd):"
-          ls -la
-          exit 1
-        fi
-
-        if [ -f package-lock.json ]; then
-          echo "Detected package-lock.json -> using npm ci"
-          npm ci
-        else
-          echo "No lockfile -> using npm install"
-          npm install
-        fi
-
-        echo "Running build script from package.json"
-        npm run build
-
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ${{ env.PUBLISH_DIR }}
-
+      - name: Run deploy commands on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_TARGET }} "cd /tmp && tar xzf deploy_package.tgz -C /tmp/deploy && cd /tmp/deploy && docker-compose up -d --build && docker-compose -f infra/docker-compose.full.yml up -d"
