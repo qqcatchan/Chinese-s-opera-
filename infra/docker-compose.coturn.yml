@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  coturn:
+    image: instrumentisto/coturn:4
+    container_name: coturn
+    restart: unless-stopped
+    environment:
+      - LISTENING_PORT=3478
+      - EXTERNAL_IP=${COTURN_EXTERNAL_IP:-}
+      - REALM=${DOMAIN:-example.com}
+      - MIN_PORT=49152
+      - MAX_PORT=65535
+      - LONG_TERM_CREDENTIALS=1
+      - STATIC_AUTH_SECRET=${TURN_SECRET:-replace_with_long_random}
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "49152-65535:49152-65535/udp"
+    volumes:
+      - ./infra/coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: ["/bin/sh", "-c", "/usr/local/bin/turnserver -c /etc/coturn/turnserver.conf"]
+
+# Note: This file is an auxiliary compose for coturn. Use together with your main docker-compose.yml

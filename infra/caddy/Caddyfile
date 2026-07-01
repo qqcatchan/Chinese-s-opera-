@@ -1,0 +1,13 @@
+# Caddyfile for reverse proxy and automatic HTTPS
+
+{$DOMAIN}
+root * /usr/share/caddy
+encode gzip
+
+# Proxy frontend (Vite / built static files)
+reverse_proxy /frontend/* http://frontend:5173
+
+# Proxy signaling server API
+reverse_proxy /api/* http://signaling:4000
+
+# You can add more routes as needed

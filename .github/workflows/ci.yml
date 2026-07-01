@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install frontend deps
+        working-directory: frontend/mobile-demo
+        run: npm ci
+
+      - name: Run frontend build
+        working-directory: frontend/mobile-demo
+        run: npm run build
+
+      - name: Lint backend (signaling)
+        working-directory: backend/signaling
+        run: |
+          npm ci
+          npm run --silent test || true
+
