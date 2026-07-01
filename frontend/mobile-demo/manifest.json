@@ -1,0 +1,9 @@
+{
+  "name": "Chinese Opera Mobile Demo",
+  "short_name": "OperaDemo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "Mobile demo for pose, vocal and multiplayer features",
+  "icons": []
+}
