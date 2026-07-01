@@ -1,0 +1,25 @@
+#!/bin/bash
+# Demo recording script guidance
+
+# 1) Start services
+# - Start signaling server:
+#   cd backend/signaling
+#   npm install
+#   npm start
+# - Start frontend:
+#   cd frontend/mobile-demo
+#   npm install
+#   npm run start
+
+# 2) On your phone
+# - Open the demo URL (use ngrok if you need HTTPS)
+# - Allow camera and mic
+# - Join room and start P2P
+
+# 3) Recording sequence (scripted narration)
+# - Intro (10s): "This demo shows mobile pose detection, vocal feedback, and live peer-to-peer interaction."
+# - Show camera preview (15s): "Allowing camera -> live preview shown."
+# - Show vocal meter (10s): "Speaking now to demonstrate microphone volume meter."
+# - Pose demo (20s): "Move arms/head, observe overlay and advice at bottom."
+# - P2P demo (30s): "Join room from another device and start P2P, show remote video and chat."
+# - End (5s): "Demo complete, next steps..."

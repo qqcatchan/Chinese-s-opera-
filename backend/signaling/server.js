@@ -20,11 +20,18 @@ io.on('connection', (socket) => {
   })
 
   socket.on('message', ({ room, text }) => {
+    // broadcast chat and also allow carrying signalling payloads
     io.to(room).emit('message', { from: socket.id, text })
   })
 
-  socket.on('signal', ({ to, data }) => {
-    io.to(to).emit('signal', { from: socket.id, data })
+  // enhanced signal handler: if room provided, broadcast to room; if `to` provided, send to specific socket id
+  socket.on('signal', ({ room, to, data }) => {
+    if (room) {
+      // broadcast to others in room
+      socket.to(room).emit('signal', { from: socket.id, data })
+    } else if (to) {
+      io.to(to).emit('signal', { from: socket.id, data })
+    }
   })
 
   socket.on('disconnect', () => {
