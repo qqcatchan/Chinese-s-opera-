@@ -1,0 +1,58 @@
+  - name: Install ffmpeg
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y ffmpeg
+
+  - name: Prepare unique branch name
+    id: branch
+    run: |
+      PREFIX="${{ github.event.inputs.target_branch_prefix }}"
+      BRANCH="${PREFIX}-${{ github.run_id }}-$(date -u +%Y%m%d%H%M%S)"
+      echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+      echo "Branch: ${BRANCH}"
+
+  - name: Find source files (glob)
+    id: find
+    run: |
+      PATTERN='${{ github.event.inputs.source_pattern }}'
+      mapfile -t FILES < <(find . -type f -name "$PATTERN" -print | sed 's|^\./||')
+      if [ ${#FILES[@]} -eq 0 ]; then
+        echo "No files matched pattern: $PATTERN"
+        exit 1
+      fi
+      printf "%s\n" "${FILES[@]}" > files_list.txt
+      echo "FILES_COUNT=${#FILES[@]}" >> $GITHUB_ENV
+
+  - name: Convert matched files to mp3
+    run: |
+      mkdir -p audio
+      while IFS= read -r SRC || [ -n "$SRC" ]; do
+        BASE="$(basename "$SRC" .mp4)"
+        OUT="audio/${BASE}.mp3"
+        echo "Converting: $SRC → $OUT"
+        ffmpeg -y -i "$SRC" -vn -acodec libmp3lame -b:a "${{ github.event.inputs.bitrate }}" -ar "${{ github.event.inputs.sample_rate }}" -ac "${{ github.event.inputs.channels }}" "$OUT"
+        if [ $? -ne 0 ]; then
+          echo "ffmpeg failed for $SRC"
+          exit 1
+        fi
+        echo "Created $OUT — size: $(wc -c < "$OUT") bytes"
+      done < files_list.txt
+
+  - name: Commit converted audio to unique branch
+    uses: stefanzweifel/git-auto-commit-action@v4
+    with:
+      commit_message: ${{ github.event.inputs.pr_title }}
+      branch: ${{ env.BRANCH }}
+      file_pattern: audio/**
+
+  - name: Create Pull Request (optional)
+    if: ${{ github.event.inputs.create_pr == 'true' }}
+    uses: peter-evans/create-pull-request@v5
+    with:
+      token: ${{ secrets.GITHUB_TOKEN }}
+      commit-message: ${{ github.event.inputs.pr_title }}
+      branch: ${{ env.BRANCH }}
+      base: main
+      title: ${{ github.event.inputs.pr_title }}
+      body: ${{ github.event.inputs.pr_body }}
+      labels: converted-audio
