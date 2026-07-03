@@ -1,0 +1,141 @@
+name: Convert MP4 → MP3 (unique branch) and Create PR with Auto-merge
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_pattern:
+        description: 'Filename glob relative to repo root (e.g. "*.mp4" or "videos/*.mp4" or a single file)'
+        required: true
+        default: 'gemini_generated_video_55B076B0.mp4'
+      target_branch_prefix:
+        description: 'Branch name prefix'
+        required: true
+        default: 'integration/chinese-opera-vr'
+      create_pr:
+        description: 'Create a pull request? (true/false)'
+        required: true
+        default: 'true'
+      pr_title:
+        description: 'PR title'
+        required: false
+        default: 'Add converted audio'
+      pr_body:
+        description: 'PR body'
+        required: false
+        default: 'Converted MP4 → MP3'
+      reviewers:
+        description: 'Comma-separated GitHub usernames to request review from (optional)'
+        required: false
+        default: ''
+      assignees:
+        description: 'Comma-separated GitHub usernames to assign (optional)'
+        required: false
+        default: ''
+      labels:
+        description: 'Comma-separated labels to add to the PR (optional)'
+        required: false
+        default: 'converted-audio'
+      auto_merge:
+        description: 'Enable auto-merge for the created PR? (true/false)'
+        required: true
+        default: 'true'
+      merge_method:
+        description: 'Auto-merge method: merge / squash / rebase'
+        required: false
+        default: 'squash'
+      bitrate:
+        description: 'Audio bitrate (e.g., 192k)'
+        required: false
+        default: '192k'
+      sample_rate:
+        description: 'Sample rate (e.g., 44100)'
+        required: false
+        default: '44100'
+      channels:
+        description: 'Channels (1 = mono, 2 = stereo)'
+        required: false
+        default: '2'
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Prepare unique branch name
+        id: branch
+        run: |
+          PREFIX="${{ github.event.inputs.target_branch_prefix }}"
+          BRANCH="${PREFIX}-${{ github.run_id }}-$(date -u +%Y%m%d%H%M%S)"
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+          echo "Branch: ${BRANCH}"
+
+      - name: Find source files (glob)
+        id: find
+        run: |
+          PATTERN='${{ github.event.inputs.source_pattern }}'
+          mapfile -t FILES < <(find . -type f -name "$PATTERN" -print | sed 's|^\./||')
+          if [ ${#FILES[@]} -eq 0 ]; then
+            echo "No files matched pattern: $PATTERN"
+            exit 1
+          fi
+          printf "%s\n" "${FILES[@]}" > files_list.txt
+          echo "FILES_COUNT=${#FILES[@]}" >> $GITHUB_ENV
+          printf "Found files:\n%s\n" "$(cat files_list.txt)"
+
+      - name: Convert matched files to mp3
+        run: |
+          mkdir -p audio
+          while IFS= read -r SRC || [ -n "$SRC" ]; do
+            BASE="$(basename "$SRC" .mp4)"
+            OUT="audio/${BASE}.mp3"
+            echo "Converting: $SRC → $OUT"
+            ffmpeg -y -i "$SRC" -vn -acodec libmp3lame -b:a "${{ github.event.inputs.bitrate }}" -ar "${{ github.event.inputs.sample_rate }}" -ac "${{ github.event.inputs.channels }}" "$OUT"
+            if [ $? -ne 0 ]; then
+              echo "ffmpeg failed for $SRC"
+              exit 1
+            fi
+            echo "Created $OUT — size: $(wc -c < "$OUT") bytes"
+          done < files_list.txt
+
+      - name: Commit converted audio to unique branch
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: ${{ github.event.inputs.pr_title }}
+          branch: ${{ env.BRANCH }}
+          file_pattern: audio/**
+
+      - name: Create Pull Request (optional)
+        id: create_pr
+        if: ${{ github.event.inputs.create_pr == 'true' }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: ${{ github.event.inputs.pr_title }}
+          branch: ${{ env.BRANCH }}
+          base: main
+          title: ${{ github.event.inputs.pr_title }}
+          body: ${{ github.event.inputs.pr_body }}
+          reviewers: ${{ github.event.inputs.reviewers }}
+          assignees: ${{ github.event.inputs.assignees }}
+          labels: ${{ github.event.inputs.labels }}
+
+      - name: Enable auto-merge for PR (optional)
+        if: ${{ github.event.inputs.create_pr == 'true' && github.event.inputs.auto_merge == 'true' }}
+        uses: peter-evans/enable-pull-request-automerge@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: ${{ github.event.inputs.merge_method }}
